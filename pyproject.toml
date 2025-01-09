@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "undercat"
 dynamic = ["version"]
@@ -13,5 +17,28 @@ classifiers = [
 ]
 dependencies = []
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.sdist]
+only-include = ["undercat"]
+exclude = [".venv", "TODO.md"]
+
+[tool.hatch.version]
+path = "undercat/__init__.py"
+
 [tool.commitizen]
 tag_format = "v$major.$minor.$patch"
+
+[tool.mypy]
+exclude = ["tmp.*"]
+warn_unused_configs = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = "tests"
+strict = false
+disable_error_code = ["attr-defined", "no-untyped-call", "no-untyped-def"]
+
+[tool.pytest.ini_options]
+addopts = "--verbose --durations=10 --cov=undercat --cov-config pyproject.toml"
