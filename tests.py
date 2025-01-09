@@ -96,6 +96,10 @@ class Vec(tuple[float]):
     (r_square >= r_square, 3, True),
     (r_square > r_add_one, 3, True),
     (r_square > r_square, 3, False),
+    (r_square.equals(r_square), 3, True),
+    (r_square.equals(r_id), 3, False),
+    (r_square.not_equals(r_square), 3, False),
+    (r_square.not_equals(r_id), 3, True),
     # reductions
     (uc.all([]), False, True),
     (uc.all([]), True, True),
@@ -141,11 +145,11 @@ def test_reader_equality():
     (This may be unexpected, as one might think they return a Reader.)
     Equality is just identity of objects."""
     assert r_square is r_square
-    assert r_square == r_square
-    assert not (r_square != r_square)
+    assert (r_square == r_square) is True
+    assert (r_square != r_square) is False
     assert uc.const(1) is not uc.const(2)
-    assert uc.const(1) != uc.const(2)
-    assert not (uc.const(1) == uc.const(2))
+    assert (uc.const(1) != uc.const(2)) is True
+    assert (uc.const(1) == uc.const(2)) is False
     assert uc.const(1) is not uc.const(1)
-    assert uc.const(1) != uc.const(1)
-    assert not (uc.const(1) == uc.const(1))
+    assert (uc.const(1) != uc.const(1)) is True
+    assert (uc.const(1) == uc.const(1)) is False

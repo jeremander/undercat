@@ -113,6 +113,14 @@ class Reader(Generic[S, A]):
     def __gt__(self, other: Reader[S, A]) -> Reader[S, bool]:
         return self.map_binary(ops.gt, other)  # type: ignore[arg-type]
 
+    def equals(self, other: Reader[S, A]) -> Reader[S, bool]:
+        """Returns a Reader that evaluates whether the output of this Reader equals the output of the other."""
+        return self.map_binary(ops.eq, other)
+
+    def not_equals(self, other: Reader[S, A]) -> Reader[S, bool]:
+        """Returns a Reader that evaluates whether the output of this Reader does not equal the output of the other."""
+        return self.equals(other).falsy()
+
 
 def const(val: A) -> Reader[S, A]:
     """Given a value, returns a Reader that is a constant function returning that value."""
@@ -173,7 +181,6 @@ def max(readers: Iterable[Reader[S, A]], default: Optional[A] = None) -> Reader[
     return reduce(readers, builtins.max, initial=default)  # type: ignore[arg-type]
 
 
-# explicit eq/ne
 # __contains__
 # __getitem__
 # bold: override __getattr__ for item access
