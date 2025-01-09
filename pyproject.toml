@@ -41,4 +41,6 @@ strict = false
 disable_error_code = ["attr-defined", "no-untyped-call", "no-untyped-def"]
 
 [tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests.py"]
 addopts = "--verbose --durations=10 --cov=undercat --cov-config pyproject.toml"
