@@ -100,6 +100,12 @@ class Vec(tuple[float]):
     (r_square.equals(r_id), 3, False),
     (r_square.not_equals(r_square), 3, False),
     (r_square.not_equals(r_id), 3, True),
+    # other operators
+    (r_id.contains('a'), 3, TypeError('not iterable')),
+    (r_id.contains('a'), 'abc', True),
+    (r_id.contains('a'), 'bc', False),
+    (r_id.contains('a'), ['a'], True),
+    (r_id.contains('a'), ['ab'], False),
     # reductions
     (uc.all([]), False, True),
     (uc.all([]), True, True),
@@ -153,3 +159,12 @@ def test_reader_equality():
     assert uc.const(1) is not uc.const(1)
     assert (uc.const(1) != uc.const(1)) is True
     assert (uc.const(1) == uc.const(1)) is False
+
+def test_in_reader():
+    """Tests that the `__contains__` operator is invalid for Reader."""
+    with pytest.raises(TypeError, match='not iterable'):
+        _ = 3 in r_square
+    with pytest.raises(TypeError, match='not iterable'):
+        _ = 3 not in r_square
+    with pytest.raises(TypeError, match='not iterable'):
+        _ = 3 not in uc.const([1, 2, 3])

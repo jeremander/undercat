@@ -121,6 +121,12 @@ class Reader(Generic[S, A]):
         """Returns a Reader that evaluates whether the output of this Reader does not equal the output of the other."""
         return self.equals(other).falsy()
 
+    # OTHER OPERATORS
+
+    def contains(self, element: object) -> Reader[S, bool]:
+        """Returns a Reader returning True if the given element is in the value returned by this Reader."""
+        return self.map(lambda val: element in val)  # type: ignore[operator]
+
 
 def const(val: A) -> Reader[S, A]:
     """Given a value, returns a Reader that is a constant function returning that value."""
