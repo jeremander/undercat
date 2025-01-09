@@ -106,6 +106,12 @@ class Vec(tuple[float]):
     (r_id.contains('a'), 'bc', False),
     (r_id.contains('a'), ['a'], True),
     (r_id.contains('a'), ['ab'], False),
+    (r_id[0], 3, TypeError('not subscriptable')),
+    (r_id[0], [], IndexError('out of range')),
+    (r_id[0], [1, 2, 3], 1),
+    (r_id[:2], 3, TypeError('not subscriptable')),
+    (r_id[:2], [], []),
+    (r_id[:2], [1, 2, 3], [1, 2]),
     # reductions
     (uc.all([]), False, True),
     (uc.all([]), True, True),
