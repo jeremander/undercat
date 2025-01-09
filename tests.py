@@ -21,6 +21,8 @@ r_add_one = Reader(add_one)
 
 r_id = Reader(lambda val: val)
 r_not = Reader(ops.not_)
+r_item1 = Reader.itemgetter(1)
+r_attr = Reader.attrgetter('attr')
 
 
 class Vec(tuple[float]):
@@ -45,6 +47,17 @@ class Obj:
     # const
     (uc.const(5), 0, 5),
     (uc.const(5), 1, 5),
+    # itemgetter
+    (r_item1, 3, TypeError('not subscriptable')),
+    (r_item1, [], IndexError('out of range')),
+    (r_item1, [1, 2, 3], 2),
+    (Reader.itemgetter('key'), {}, KeyError('key')),
+    (uc.itemgetter('key'), {'key': 3}, 3),
+    # attrgetter
+    (r_attr, 3, AttributeError("'int' object has no attribute 'attr'")),
+    (r_attr, Obj(3), 3),
+    (Reader.attrgetter('attr2'), Obj(3), AttributeError("'Obj' object has no attribute 'attr2'")),
+    (uc.attrgetter('attr.attr'), Obj(Obj(3)), 3),
     # mktuple
     (uc.mktuple(uc.const(1), uc.const(2)), 0, (1, 2)),
     # map

@@ -18,6 +18,28 @@ A = TypeVar('A')
 B = TypeVar('B')
 
 
+def _getattr(attr: str, *args: Any) -> Callable[[Any], Any]:
+    if not isinstance(attr, str):
+        raise TypeError('attr must be a string')
+    attrs = attr.split('.')
+    for seg in attrs:
+        if (not seg.isalnum()) or seg[0].isdigit():
+            raise ValueError(f'invalid attribute name {seg!r}')
+    func = ops.attrgetter(attr)
+    if args:
+        if len(args) > 1:
+            num_args = 1 + len(args)
+            raise TypeError(f'getattr expected at most 2 arguments, got {num_args}')
+        def _getattr(val: Any) -> Any:
+            try:
+                return func(val)
+            except AttributeError:  # return the default
+                return args[0]
+        return _getattr
+    else:  # no default
+        return func
+
+
 @dataclass(frozen=True)
 class Reader(Generic[S, A]):
     """Class that wraps a function func : S -> A."""
@@ -27,6 +49,17 @@ class Reader(Generic[S, A]):
     def const(cls, val: A) -> Reader[S, A]:
         """Given a value, returns a Reader that is a constant function returning that value."""
         return Reader(lambda _: val)
+
+    @classmethod
+    def itemgetter(cls, index: Any) -> Reader[S, Any]:
+        """Given an index object, returns a Reader that takes a value and returns returns value[index]."""
+        return Reader(ops.itemgetter(index))  # type: ignore[arg-type]
+
+    @classmethod
+    def attrgetter(cls, attr: str, *args: Any) -> Reader[S, Any]:
+        """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
+        attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
+        return Reader(_getattr(attr, *args))
 
     @classmethod
     def mktuple(cls, *readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
@@ -135,25 +168,12 @@ class Reader(Generic[S, A]):
         """Returns a Reader that returns getattr(value, attr, [default]), where value is the value returned by this Reader.
         attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval.
         The second argument to this method, if present, is the default value to use if an attribute does not exist."""
-        if not isinstance(attr, str):
-            raise TypeError('attr must be a string')
-        attrs = attr.split('.')
-        for seg in attrs:
-            if (not seg.isalnum()) or seg[0].isdigit():
-                raise ValueError(f'invalid attribute name {seg!r}')
-        func = ops.attrgetter(attr)
-        if args:
-            if len(args) > 1:
-                num_args = 1 + len(args)
-                raise TypeError(f'getattr expected at most 2 arguments, got {num_args}')
-            def _getattr(val: Any) -> Any:
-                try:
-                    return func(val)
-                except AttributeError:  # return the default
-                    return args[0]
-        else:  # no default
-            _getattr = func  # type: ignore[assignment]
-        return self.map(_getattr)
+        return self.map(_getattr(attr, *args))
+
+
+#######################
+# READER CONSTRUCTORS #
+#######################
 
 
 def const(val: A) -> Reader[S, A]:
@@ -164,6 +184,17 @@ def const(val: A) -> Reader[S, A]:
 def mktuple(*readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
     """Converts multiple Readers into a single Reader that produces a tuple of values, one for each of the input Readers."""
     return Reader.mktuple(*readers)
+
+
+def itemgetter(index: Any) -> Reader[S, Any]:
+    """Given an index object, returns a Reader that takes a value and returns returns value[index]."""
+    return Reader.itemgetter(index)
+
+
+def attrgetter(attr: str, *args: Any) -> Reader[S, Any]:
+    """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
+    attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
+    return Reader.attrgetter(attr, *args)
 
 
 def map(func: Callable[[A], B], reader: Reader[S, A]) -> Reader[S, B]:  # noqa: A001
