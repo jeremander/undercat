@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import functools
 import operator as ops
-from typing import Any, Callable, Generic, NoReturn, Optional, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 
 __version__ = '0.1.0'
@@ -123,16 +123,13 @@ class Reader(Generic[S, A]):
 
     # OTHER OPERATORS
 
-    def __iter__(self) -> NoReturn:
-        # ensure we cannot iterate this object (since we're overriding __getitem__)
-        raise TypeError(f'{type(self).__name__!r} object is not iterable')
-
     def contains(self, element: Any) -> Reader[S, bool]:
         """Returns a Reader returning True if the given element is in the value returned by this Reader."""
         return self.map(lambda val: element in val)  # type: ignore[operator]
 
-    def __getitem__(self, index: Any) -> Reader[S, Any]:
-        return self.map(ops.itemgetter(index))
+    def getitem(self, index: Any) -> Reader[S, Any]:
+        """Returns a Reader that returns value[index], where value is the value returned by this Reader."""
+        return self.map(ops.itemgetter(index))  # type: ignore[arg-type]
 
 
 def const(val: A) -> Reader[S, A]:
@@ -192,6 +189,3 @@ def min(readers: Iterable[Reader[S, A]], default: Optional[A] = None) -> Reader[
 def max(readers: Iterable[Reader[S, A]], default: Optional[A] = None) -> Reader[S, A]:  # noqa: A001
     """Given a sequence of Readers, produces a new Reader that evaluates the maximum of the values output by the Readers."""
     return reduce(readers, builtins.max, initial=default)  # type: ignore[arg-type]
-
-
-# bold: override __getattr__ for item access

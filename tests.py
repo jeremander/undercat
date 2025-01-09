@@ -106,12 +106,16 @@ class Vec(tuple[float]):
     (r_id.contains('a'), 'bc', False),
     (r_id.contains('a'), ['a'], True),
     (r_id.contains('a'), ['ab'], False),
-    (r_id[0], 3, TypeError('not subscriptable')),
-    (r_id[0], [], IndexError('out of range')),
-    (r_id[0], [1, 2, 3], 1),
-    (r_id[:2], 3, TypeError('not subscriptable')),
-    (r_id[:2], [], []),
-    (r_id[:2], [1, 2, 3], [1, 2]),
+    (r_id.getitem(0), 3, TypeError('not subscriptable')),
+    (r_id.getitem(0), [], IndexError('out of range')),
+    (r_id.getitem(0), [1, 2, 3], 1),
+    (r_id.getitem(slice(None, 2)), 3, TypeError('not subscriptable')),
+    (r_id.getitem(slice(None, 2)), [], []),
+    (r_id.getitem(slice(None, 2)), [1, 2, 3], [1, 2]),
+    (r_id.getitem('key'), 3, TypeError('not subscriptable')),
+    (r_id.getitem('key'), [], TypeError('list indices must be integers or slices')),
+    (r_id.getitem('key'), {}, KeyError('key')),
+    (r_id.getitem('key'), {'key': 'val'}, 'val'),
     # reductions
     (uc.all([]), False, True),
     (uc.all([]), True, True),
@@ -166,11 +170,23 @@ def test_reader_equality():
     assert (uc.const(1) != uc.const(1)) is True
     assert (uc.const(1) == uc.const(1)) is False
 
-def test_in_reader():
-    """Tests that the `__contains__` operator is invalid for Reader."""
-    with pytest.raises(TypeError, match='not iterable'):
+def test_invalid_operators():
+    """Tests that certain operators are invalid when called on a Reader."""
+    type_err = lambda match: pytest.raises(TypeError, match=match)
+    # __iter__
+    with type_err('not iterable'):
+        _ = list(r_square)  # type: ignore[call-overload]
+    # __contains__
+    with type_err('not iterable'):
         _ = 3 in r_square
-    with pytest.raises(TypeError, match='not iterable'):
+    with type_err('not iterable'):
         _ = 3 not in r_square
-    with pytest.raises(TypeError, match='not iterable'):
+    with type_err('not iterable'):
         _ = 3 not in uc.const([1, 2, 3])
+    # __getitem__
+    with type_err('not subscriptable'):
+        _ = r_square[1]
+    with type_err('not subscriptable'):
+        _ = r_square['key']
+    with type_err('not subscriptable'):
+        _ = r_square[:2]
