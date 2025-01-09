@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import functools
 import operator as ops
-from typing import Any, Callable, Generic, NoReturn, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar
 
 
 __version__ = '0.1.0'
@@ -18,7 +18,7 @@ A = TypeVar('A')
 B = TypeVar('B')
 
 
-@dataclass(frozen=True, repr=False)
+@dataclass(frozen=True)
 class Reader(Generic[S, A]):
     """Class that wraps a function func : S -> A."""
     func: Callable[[S], A]
@@ -71,13 +71,13 @@ class Reader(Generic[S, A]):
     def __matmul__(self, other: Reader[S, A]) -> Reader[S, A]:
         return self.map_binary(ops.matmul, other)
 
-    def __neg__(self, other: Reader[S, A]) -> Reader[S, A]:
+    def __neg__(self) -> Reader[S, A]:
         return self.map(ops.neg)  # type: ignore[arg-type]
 
-    def __pos__(self, other: Reader[S, A]) -> Reader[S, A]:
+    def __pos__(self) -> Reader[S, A]:
         return self.map(ops.pos)  # type: ignore[arg-type]
 
-    def __invert__(self, other: Reader[S, A]) -> Reader[S, A]:
+    def __invert__(self) -> Reader[S, A]:
         return self.map(ops.inv)  # type: ignore[arg-type]
 
     # LOGICAL OPERATORS
@@ -91,6 +91,14 @@ class Reader(Generic[S, A]):
     def __xor__(self, other: Reader[S, A]) -> Reader[S, A]:
         return self.map_binary(ops.xor, other)
 
+    def truthy(self) -> Reader[S, bool]:
+        """Returns a Reader that evaluates the `bool` function on this Reader's output."""
+        return self.map(bool)
+
+    def falsy(self) -> Reader[S, bool]:
+        """Returns a Reader that evaluates the logical negation (`not` operator) on this Reader's output."""
+        return self.map(ops.not_)
+
     # COMPARISON OPERATORS
 
     def __lt__(self, other: Reader[S, A]) -> Reader[S, bool]:
@@ -99,19 +107,11 @@ class Reader(Generic[S, A]):
     def __le__(self, other: Reader[S, A]) -> Reader[S, bool]:
         return self.map_binary(ops.le, other)  # type: ignore[arg-type]
 
-    def __eq__(self, other: Any) -> NoReturn:
-        # forbid equality operator since it could ambiguously be assumed to return a bool or a Reader
-        raise NotImplementedError
-
-    def __ne__(self, other: Any) -> NoReturn:
-        raise NotImplementedError
-
     def __ge__(self, other: Reader[S, A]) -> Reader[S, bool]:
         return self.map_binary(ops.ge, other)  # type: ignore[arg-type]
 
     def __gt__(self, other: Reader[S, A]) -> Reader[S, bool]:
         return self.map_binary(ops.gt, other)  # type: ignore[arg-type]
-
 
 
 def const(val: A) -> Reader[S, A]:
@@ -139,7 +139,7 @@ def reduce(readers: Iterable[Reader[S, A]], operator: Callable[[A, A], A], initi
     if initial is None:
         func = functools.partial(functools.reduce, operator)
     else:
-        func = functools.partial(functools.reduce, operator, initial=initial)
+        func = lambda iterable: functools.reduce(operator, iterable, initial)  # type: ignore[assignment]
     return mktuple(*readers).map(func)
 
 
@@ -173,6 +173,7 @@ def max(readers: Iterable[Reader[S, A]], default: Optional[A] = None) -> Reader[
     return reduce(readers, builtins.max, initial=default)  # type: ignore[arg-type]
 
 
+# explicit eq/ne
 # __contains__
 # __getitem__
 # bold: override __getattr__ for item access

@@ -30,6 +30,21 @@ path = "undercat/__init__.py"
 [tool.commitizen]
 tag_format = "v$major.$minor.$patch"
 
+[tool.coverage.run]
+source_pkgs = ["undercat"]
+branch = true
+parallel = true
+omit = ["venv/*"]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
 [tool.mypy]
 exclude = ["tmp.*"]
 warn_unused_configs = true
@@ -38,7 +53,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = "tests"
 strict = false
-disable_error_code = ["attr-defined", "no-untyped-call", "no-untyped-def"]
+disable_error_code = ["arg-type", "attr-defined", "no-untyped-call", "no-untyped-def", "var-annotated"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
