@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import operator as ops
+import re
 from typing import Any
 
 import pytest
@@ -130,6 +131,12 @@ class Obj:
     (r_id.getattr('attr'), Obj(Obj(3)), Obj(3)),
     (r_id.getattr('attr').getattr('attr'), Obj(3), AttributeError("'int' object has no attribute 'attr'")),
     (r_id.getattr('attr').getattr('attr'), Obj(Obj(3)), 3),
+    (r_id.getattr('attr.attr'), 3, AttributeError("'int' object has no attribute 'attr'")),
+    (r_id.getattr('attr.attr'), Obj(3), AttributeError("'int' object has no attribute 'attr'")),
+    (r_id.getattr('attr.attr'), Obj(Obj(3)), 3),
+    (r_id.getattr('attr.attr', None), 3, None),
+    (r_id.getattr('attr.attr', None), Obj(3), None),
+    (r_id.getattr('attr.attr', None), Obj(Obj(3)), 3),
     # reductions
     (uc.all([]), False, True),
     (uc.all([]), True, True),
@@ -207,3 +214,23 @@ def test_invalid_operators():
     # getattr with too many args
     with type_err('getattr expected at most 2 arguments, got 3'):
         _ = r_id.getattr('attr', 1, None)
+    # getattr with invalid attr string
+    with type_err('attr must be a string'):
+        _ = r_id.getattr(3)
+
+@pytest.mark.parametrize(['attr', 'seg'], [
+    ('', ''),
+    (' ', ' '),
+    ('+', '+'),
+    ('a+', 'a+'),
+    ('a ', 'a '),
+    (' a', ' a'),
+    ('1', '1'),
+    ('1a', '1a'),
+    ('a.b+', 'b+'),
+    ('a.1b', '1b'),
+    ('a.1b.c', '1b'),
+])
+def test_invalid_attr_name(attr, seg):
+    with pytest.raises(ValueError, match=re.escape(f'invalid attribute name {seg!r}')):
+        _ = r_id.getattr(attr)

@@ -133,14 +133,26 @@ class Reader(Generic[S, A]):
 
     def getattr(self, attr: str, *args: Any) -> Reader[S, Any]:
         """Returns a Reader that returns getattr(value, attr, [default]), where value is the value returned by this Reader.
-        The second argument to this method, if present, is the default."""
+        attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval.
+        The second argument to this method, if present, is the default value to use if an attribute does not exist."""
+        if not isinstance(attr, str):
+            raise TypeError('attr must be a string')
+        attrs = attr.split('.')
+        for seg in attrs:
+            if (not seg.isalnum()) or seg[0].isdigit():
+                raise ValueError(f'invalid attribute name {seg!r}')
+        func = ops.attrgetter(attr)
         if args:
             if len(args) > 1:
                 num_args = 1 + len(args)
                 raise TypeError(f'getattr expected at most 2 arguments, got {num_args}')
-            _getattr = lambda val: getattr(val, attr, args[0])
+            def _getattr(val: Any) -> Any:
+                try:
+                    return func(val)
+                except AttributeError:  # return the default
+                    return args[0]
         else:  # no default
-            _getattr = lambda val: getattr(val, attr)
+            _getattr = func  # type: ignore[assignment]
         return self.map(_getattr)
 
 
@@ -162,6 +174,7 @@ def map(func: Callable[[A], B], reader: Reader[S, A]) -> Reader[S, B]:  # noqa: 
 ##############
 # REDUCTIONS #
 ##############
+
 
 def reduce(readers: Iterable[Reader[S, A]], operator: Callable[[A, A], A], initial: Optional[A] = None) -> Reader[S, A]:
     """Given a sequence of Readers and a binary operator, produces a new Reader that reduces the operator over the values produced by the input Readers.
