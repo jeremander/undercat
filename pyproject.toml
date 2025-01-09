@@ -1,0 +1,18 @@
+[project]
+name = "undercat"
+version = "0.1.0"
+# dynamic = ["version"]
+description = "Library implementing the covariant Hom (AKA \"Reader\") functor."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [
+  { name = "Jeremy Silver", email = "jeremys@nessiness.com" }
+]
+classifiers = [
+  "Programming Language :: Python"
+]
+dependencies = []
+
+[tool.commitizen]
+tag_format = "v$major.$minor.$patch"
