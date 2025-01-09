@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import builtins
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 import functools
 import operator as ops
@@ -18,14 +18,35 @@ A = TypeVar('A')
 B = TypeVar('B')
 
 
-def _getattr(attr: str, *args: Any) -> Callable[[Any], Any]:
+####################
+# HELPER FUNCTIONS #
+####################
+
+
+def _getattr_simple(attr: str, type: Optional[type] = None) -> Callable[[Any], Any]:
+    assert isinstance(attr, str)
+    if (not attr.isalnum()) or attr[0].isdigit():
+        raise ValueError(f'invalid attribute name {attr!r}')
+    # TODO: use type
+    return ops.attrgetter(attr)
+
+
+def _getattr_nested(attrs: Sequence[str], type: Optional[type] = None) -> Callable[[Any], Any]:
+    assert len(attrs) > 0
+    outer = _getattr_simple(attrs[0], type=type)
+    if len(attrs) == 1:
+        return outer
+    # recursively call this function to get a function for the nested accesses
+    inner = _getattr_nested(attrs[1:], type=None)  # TODO: use type
+    # left-compose inner with outer
+    return lambda val: inner(outer(val))
+
+
+def _getattr(attr: str, *args: Any, type: Optional[type] = None) -> Callable[[Any], Any]:
     if not isinstance(attr, str):
         raise TypeError('attr must be a string')
     attrs = attr.split('.')
-    for seg in attrs:
-        if (not seg.isalnum()) or seg[0].isdigit():
-            raise ValueError(f'invalid attribute name {seg!r}')
-    func = ops.attrgetter(attr)
+    func = _getattr_nested(attrs, type=type)
     if args:
         if len(args) > 1:
             num_args = 1 + len(args)
@@ -39,6 +60,10 @@ def _getattr(attr: str, *args: Any) -> Callable[[Any], Any]:
     else:  # no default
         return func
 
+
+##########
+# READER #
+##########
 
 @dataclass(frozen=True)
 class Reader(Generic[S, A]):
