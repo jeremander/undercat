@@ -1,7 +1,6 @@
 [project]
 name = "undercat"
-version = "0.1.0"
-# dynamic = ["version"]
+dynamic = ["version"]
 description = "Library implementing the covariant Hom (AKA \"Reader\") functor."
 readme = "README.md"
 requires-python = ">=3.11"
