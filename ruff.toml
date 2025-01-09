@@ -38,6 +38,7 @@ lint.ignore = [
     "D213",  # multiline docstring at second line
     "D400",  # first line ending with period
     "D401",  # docstrings in imperative mood
+    "D402",
     "D404",  # first word of docstring is "this"
     "D406",
     "D407",

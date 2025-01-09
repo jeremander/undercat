@@ -131,6 +131,18 @@ class Reader(Generic[S, A]):
         """Returns a Reader that returns value[index], where value is the value returned by this Reader."""
         return self.map(ops.itemgetter(index))  # type: ignore[arg-type]
 
+    def getattr(self, attr: str, *args: Any) -> Reader[S, Any]:
+        """Returns a Reader that returns getattr(value, attr, [default]), where value is the value returned by this Reader.
+        The second argument to this method, if present, is the default."""
+        if args:
+            if len(args) > 1:
+                num_args = 1 + len(args)
+                raise TypeError(f'getattr expected at most 2 arguments, got {num_args}')
+            _getattr = lambda val: getattr(val, attr, args[0])
+        else:  # no default
+            _getattr = lambda val: getattr(val, attr)
+        return self.map(_getattr)
+
 
 def const(val: A) -> Reader[S, A]:
     """Given a value, returns a Reader that is a constant function returning that value."""

@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 import operator as ops
+from typing import Any
 
 import pytest
 
@@ -28,6 +30,11 @@ class Vec(tuple[float]):
 
     def __matmul__(self, other):
         return sum(xi * yi for (xi, yi) in zip(self, other))
+
+
+@dataclass
+class Obj:
+    attr: Any
 
 
 @pytest.mark.parametrize(['reader', 'input_val', 'output_val'], [
@@ -116,6 +123,13 @@ class Vec(tuple[float]):
     (r_id.getitem('key'), [], TypeError('list indices must be integers or slices')),
     (r_id.getitem('key'), {}, KeyError('key')),
     (r_id.getitem('key'), {'key': 'val'}, 'val'),
+    (r_id.getattr('attr'), 3, AttributeError("'int' object has no attribute 'attr'")),
+    (r_id.getattr('attr'), Obj(3), 3),
+    (r_id.getattr('attr', None), Obj(3), 3),
+    (r_id.getattr('other', None), Obj(3), None),
+    (r_id.getattr('attr'), Obj(Obj(3)), Obj(3)),
+    (r_id.getattr('attr').getattr('attr'), Obj(3), AttributeError("'int' object has no attribute 'attr'")),
+    (r_id.getattr('attr').getattr('attr'), Obj(Obj(3)), 3),
     # reductions
     (uc.all([]), False, True),
     (uc.all([]), True, True),
@@ -190,3 +204,6 @@ def test_invalid_operators():
         _ = r_square['key']
     with type_err('not subscriptable'):
         _ = r_square[:2]
+    # getattr with too many args
+    with type_err('getattr expected at most 2 arguments, got 3'):
+        _ = r_id.getattr('attr', 1, None)
