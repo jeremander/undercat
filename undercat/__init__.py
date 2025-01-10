@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import builtins
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
 import functools
 import operator as ops
 from typing import Any, Callable, Generic, Optional, TypeVar
@@ -23,21 +23,41 @@ B = TypeVar('B')
 ####################
 
 
-def _getattr_simple(attr: str, type: Optional[type] = None) -> Callable[[Any], Any]:
+def _get_attr_type(cls: type, attr: str) -> Optional[type]:
+    """Given a type, if it is a dataclass or namedtuple type, checks whether it possesses the given attribute.
+    If not, raises a TypeError. Otherwise, returns the type of the attribute.
+    If the input type is not a dataclass or nameduple type, returns None."""
+    if isinstance(cls, type):
+        if is_dataclass(cls):
+            if (field := cls.__dataclass_fields__.get(attr)) is not None:
+                return field.type  # type: ignore[return-value]
+            raise TypeError(f'invalid field {attr!r} for type {cls.__name__!r}')
+        if hasattr(cls, '_fields'):  # assume it's a namedtuple
+            fields = set(cls._fields)
+            if attr in fields:
+                # may or may not have an annotation
+                return cls.__annotations__.get(attr)
+            raise TypeError(f'invalid field {attr!r} for type {cls.__name__!r}')
+    return None
+
+
+def _getattr_simple(attr: str) -> Callable[[Any], Any]:
     assert isinstance(attr, str)
     if (not attr.isalnum()) or attr[0].isdigit():
         raise ValueError(f'invalid attribute name {attr!r}')
-    # TODO: use type
     return ops.attrgetter(attr)
 
 
 def _getattr_nested(attrs: Sequence[str], type: Optional[type] = None) -> Callable[[Any], Any]:
     assert len(attrs) > 0
-    outer = _getattr_simple(attrs[0], type=type)
+    attr = attrs[0]
+    outer = _getattr_simple(attr)
+    # validate attribute statically, if applicable
+    inner_type = _get_attr_type(type, attr)
     if len(attrs) == 1:
         return outer
     # recursively call this function to get a function for the nested accesses
-    inner = _getattr_nested(attrs[1:], type=None)  # TODO: use type
+    inner = _getattr_nested(attrs[1:], type=inner_type)
     # left-compose inner with outer
     return lambda val: inner(outer(val))
 
@@ -81,10 +101,10 @@ class Reader(Generic[S, A]):
         return Reader(ops.itemgetter(index))  # type: ignore[arg-type]
 
     @classmethod
-    def attrgetter(cls, attr: str, *args: Any) -> Reader[S, Any]:
+    def attrgetter(cls, attr: str, *args: Any, type: Optional[type] = None) -> Reader[S, Any]:
         """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
         attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
-        return Reader(_getattr(attr, *args))
+        return Reader(_getattr(attr, *args, type=type))
 
     @classmethod
     def mktuple(cls, *readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
@@ -189,11 +209,11 @@ class Reader(Generic[S, A]):
         """Returns a Reader that returns value[index], where value is the value returned by this Reader."""
         return self.map(ops.itemgetter(index))  # type: ignore[arg-type]
 
-    def getattr(self, attr: str, *args: Any) -> Reader[S, Any]:
+    def getattr(self, attr: str, *args: Any, type: Optional[type] = None) -> Reader[S, Any]:
         """Returns a Reader that returns getattr(value, attr, [default]), where value is the value returned by this Reader.
         attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval.
         The second argument to this method, if present, is the default value to use if an attribute does not exist."""
-        return self.map(_getattr(attr, *args))
+        return self.map(_getattr(attr, *args, type=type))
 
 
 #######################
@@ -216,10 +236,10 @@ def itemgetter(index: Any) -> Reader[S, Any]:
     return Reader.itemgetter(index)
 
 
-def attrgetter(attr: str, *args: Any) -> Reader[S, Any]:
+def attrgetter(attr: str, *args: Any, type: Optional[type] = None) -> Reader[S, Any]:
     """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
     attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
-    return Reader.attrgetter(attr, *args)
+    return Reader.attrgetter(attr, *args, type=type)
 
 
 def map(func: Callable[[A], B], reader: Reader[S, A]) -> Reader[S, B]:  # noqa: A001

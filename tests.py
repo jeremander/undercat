@@ -1,7 +1,8 @@
+from collections import namedtuple
 from dataclasses import dataclass
 import operator as ops
 import re
-from typing import Any
+from typing import Any, NamedTuple
 
 import pytest
 
@@ -39,6 +40,19 @@ class Vec(tuple[float]):
 class Obj:
     attr: Any
 
+r_attr_typed = Reader.attrgetter('attr', type=Obj)
+
+@dataclass
+class OuterDC:
+    val1: Obj
+    val2: int
+
+class OuterTypedNT(NamedTuple):
+    val1: Obj
+    val2: int
+
+OuterUntypedNT = namedtuple('OuterUntypedNT', ['val1', 'val2'])
+
 
 @pytest.mark.parametrize(['reader', 'input_val', 'output_val'], [
     # Reader
@@ -55,9 +69,16 @@ class Obj:
     (uc.itemgetter('key'), {'key': 3}, 3),
     # attrgetter
     (r_attr, 3, AttributeError("'int' object has no attribute 'attr'")),
+    (r_attr_typed, 3, AttributeError("'int' object has no attribute 'attr'")),
     (r_attr, Obj(3), 3),
+    (r_attr_typed, Obj(3), 3),
     (Reader.attrgetter('attr2'), Obj(3), AttributeError("'Obj' object has no attribute 'attr2'")),
     (uc.attrgetter('attr.attr'), Obj(Obj(3)), 3),
+    (uc.attrgetter('val1.attr', type=OuterDC), OuterDC(Obj(3), 1), 3),
+    (uc.attrgetter('val2.attr', type=OuterDC), OuterDC(Obj(3), 1), AttributeError("'int' object has no attribute 'attr'")),
+    (uc.attrgetter('val1.attr', type=OuterTypedNT), OuterDC(Obj(3), 1), 3),
+    (uc.attrgetter('val1.attr', type=OuterUntypedNT), OuterDC(Obj(3), 1), 3),
+    (uc.attrgetter('val1.fake', type=OuterUntypedNT), OuterDC(Obj(3), 1), AttributeError("'Obj' object has no attribute 'fake'")),
     # mktuple
     (uc.mktuple(uc.const(1), uc.const(2)), 0, (1, 2)),
     # map
@@ -245,5 +266,16 @@ def test_invalid_operators():
     ('a.1b.c', '1b'),
 ])
 def test_invalid_attr_name(attr, seg):
+    """Tests Reader.attrgetter when the attribute name is invalid."""
     with pytest.raises(ValueError, match=re.escape(f'invalid attribute name {seg!r}')):
-        _ = r_id.getattr(attr)
+        _ = Reader.attrgetter(attr)
+
+def test_invalid_getattr_typed():
+    """Tests Reader.attrgetter when the provided type is invalid."""
+    err = "invalid field 'fake' for type 'Obj'"
+    for (attr, tp) in [('fake', Obj), ('val1.fake', OuterDC), ('val1.fake', OuterTypedNT)]:
+        with pytest.raises(TypeError, match=err):
+            _ = Reader.attrgetter(attr, type=tp)
+    for tp in [OuterDC, OuterTypedNT, OuterUntypedNT]:
+        with pytest.raises(TypeError, match=f"invalid field 'fake' for type '{tp.__name__}'"):
+            _ = Reader.attrgetter('fake', type=tp)
