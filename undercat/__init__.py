@@ -53,7 +53,7 @@ def _getattr_nested(attrs: Sequence[str], type: Optional[type] = None) -> Callab
     attr = attrs[0]
     outer = _getattr_simple(attr)
     # validate attribute statically, if applicable
-    inner_type = _get_attr_type(type, attr)
+    inner_type = _get_attr_type(type, attr)  # type: ignore[arg-type]
     if len(attrs) == 1:
         return outer
     # recursively call this function to get a function for the nested accesses
@@ -96,18 +96,7 @@ class Reader(Generic[S, A]):
         return Reader(lambda _: val)
 
     @classmethod
-    def itemgetter(cls, index: Any) -> Reader[S, Any]:
-        """Given an index object, returns a Reader that takes a value and returns returns value[index]."""
-        return Reader(ops.itemgetter(index))  # type: ignore[arg-type]
-
-    @classmethod
-    def attrgetter(cls, attr: str, *args: Any, type: Optional[type] = None) -> Reader[S, Any]:
-        """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
-        attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
-        return Reader(_getattr(attr, *args, type=type))
-
-    @classmethod
-    def mktuple(cls, *readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
+    def make_tuple(cls, *readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
         """Converts multiple Readers into a single Reader that produces a tuple of values, one for each of the input Readers."""
         return Reader(lambda val: tuple(reader(val) for reader in readers))
 
@@ -226,20 +215,20 @@ def const(val: A) -> Reader[S, A]:
     return Reader.const(val)
 
 
-def mktuple(*readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
+def make_tuple(*readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
     """Converts multiple Readers into a single Reader that produces a tuple of values, one for each of the input Readers."""
-    return Reader.mktuple(*readers)
+    return Reader.make_tuple(*readers)
 
 
 def itemgetter(index: Any) -> Reader[S, Any]:
     """Given an index object, returns a Reader that takes a value and returns returns value[index]."""
-    return Reader.itemgetter(index)
+    return Reader(ops.itemgetter(index))  # type: ignore[arg-type]
 
 
 def attrgetter(attr: str, *args: Any, type: Optional[type] = None) -> Reader[S, Any]:
     """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
     attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
-    return Reader.attrgetter(attr, *args, type=type)
+    return Reader(_getattr(attr, *args, type=type))
 
 
 def map(func: Callable[[A], B], reader: Reader[S, A]) -> Reader[S, B]:  # noqa: A001
@@ -259,7 +248,7 @@ def reduce(readers: Iterable[Reader[S, A]], operator: Callable[[A, A], A], initi
         func = functools.partial(functools.reduce, operator)
     else:
         func = lambda iterable: functools.reduce(operator, iterable, initial)  # type: ignore[assignment]
-    return mktuple(*readers).map(func)
+    return make_tuple(*readers).map(func)
 
 
 def all(readers: Iterable[Reader[S, A]]) -> Reader[S, bool]:  # noqa: A001

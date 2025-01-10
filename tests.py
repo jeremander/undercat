@@ -22,8 +22,8 @@ r_add_one = Reader(add_one)
 
 r_id = Reader(lambda val: val)
 r_not = Reader(ops.not_)
-r_item1 = Reader.itemgetter(1)
-r_attr = Reader.attrgetter('attr')
+r_item1 = uc.itemgetter(1)
+r_attr = uc.attrgetter('attr')
 
 
 class Vec(tuple[float]):
@@ -40,7 +40,11 @@ class Vec(tuple[float]):
 class Obj:
     attr: Any
 
-r_attr_typed = Reader.attrgetter('attr', type=Obj)
+r_attr_typed = uc.attrgetter('attr', type=Obj)
+
+class Outer:
+    def __init__(self, val1):
+        self.val1 = val1
 
 @dataclass
 class OuterDC:
@@ -65,22 +69,25 @@ OuterUntypedNT = namedtuple('OuterUntypedNT', ['val1', 'val2'])
     (r_item1, 3, TypeError('not subscriptable')),
     (r_item1, [], IndexError('out of range')),
     (r_item1, [1, 2, 3], 2),
-    (Reader.itemgetter('key'), {}, KeyError('key')),
+    (uc.itemgetter('key'), {}, KeyError('key')),
     (uc.itemgetter('key'), {'key': 3}, 3),
     # attrgetter
     (r_attr, 3, AttributeError("'int' object has no attribute 'attr'")),
     (r_attr_typed, 3, AttributeError("'int' object has no attribute 'attr'")),
     (r_attr, Obj(3), 3),
     (r_attr_typed, Obj(3), 3),
-    (Reader.attrgetter('attr2'), Obj(3), AttributeError("'Obj' object has no attribute 'attr2'")),
+    (uc.attrgetter('fake'), Obj(3), AttributeError("'Obj' object has no attribute 'fake'")),
     (uc.attrgetter('attr.attr'), Obj(Obj(3)), 3),
+    (uc.attrgetter('fake', type=Outer), Outer(Obj(3)), AttributeError("'Outer' object has no attribute 'fake'")),
+    (uc.attrgetter('val1.attr', type=Outer), Outer(Obj(3)), 3),
+    (uc.attrgetter('val1.fake', type=Outer), Outer(Obj(3)), AttributeError("'Obj' object has no attribute 'fake'")),
     (uc.attrgetter('val1.attr', type=OuterDC), OuterDC(Obj(3), 1), 3),
     (uc.attrgetter('val2.attr', type=OuterDC), OuterDC(Obj(3), 1), AttributeError("'int' object has no attribute 'attr'")),
     (uc.attrgetter('val1.attr', type=OuterTypedNT), OuterDC(Obj(3), 1), 3),
     (uc.attrgetter('val1.attr', type=OuterUntypedNT), OuterDC(Obj(3), 1), 3),
     (uc.attrgetter('val1.fake', type=OuterUntypedNT), OuterDC(Obj(3), 1), AttributeError("'Obj' object has no attribute 'fake'")),
-    # mktuple
-    (uc.mktuple(uc.const(1), uc.const(2)), 0, (1, 2)),
+    # make_tuple
+    (uc.make_tuple(uc.const(1), uc.const(2)), 0, (1, 2)),
     # map
     (r_square.map(add_one), 3, 10),
     (uc.map(add_one, r_square), 3, 10),
@@ -266,16 +273,16 @@ def test_invalid_operators():
     ('a.1b.c', '1b'),
 ])
 def test_invalid_attr_name(attr, seg):
-    """Tests Reader.attrgetter when the attribute name is invalid."""
+    """Tests attrgetter when the attribute name is invalid."""
     with pytest.raises(ValueError, match=re.escape(f'invalid attribute name {seg!r}')):
-        _ = Reader.attrgetter(attr)
+        _ = uc.attrgetter(attr)
 
 def test_invalid_getattr_typed():
-    """Tests Reader.attrgetter when the provided type is invalid."""
+    """Tests attrgetter when the provided type is invalid."""
     err = "invalid field 'fake' for type 'Obj'"
     for (attr, tp) in [('fake', Obj), ('val1.fake', OuterDC), ('val1.fake', OuterTypedNT)]:
         with pytest.raises(TypeError, match=err):
-            _ = Reader.attrgetter(attr, type=tp)
+            _ = uc.attrgetter(attr, type=tp)
     for tp in [OuterDC, OuterTypedNT, OuterUntypedNT]:
         with pytest.raises(TypeError, match=f"invalid field 'fake' for type '{tp.__name__}'"):
-            _ = Reader.attrgetter('fake', type=tp)
+            _ = uc.attrgetter('fake', type=tp)
