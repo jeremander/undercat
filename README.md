@@ -1,5 +1,11 @@
 # Undercat
 
+[![PyPI - Version](https://img.shields.io/pypi/v/undercat)](https://pypi.org/project/undercat/)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jeremander/undercat/workflow.yml)
+![Coverage Status](https://github.com/jeremander/undercat/raw/coverage-badge/coverage-badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/jeremander/undercat/refs/heads/main/LICENSE)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 <img src="logo.png" width="220" alt="Undercat logo (a striped cat walking on the ceiling)"/>
 
 **Undercat** is a small Python library implementing a functional programming construct called the *Reader functor*. This pattern is particularly useful for dependency injection, composing functions, and operating on immutable, context-aware computations.
