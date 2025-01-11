@@ -1,5 +1,7 @@
 # Undercat
 
+<img src="logo.png" width="220" alt="Undercat logo (a striped cat walking on the ceiling)"/>
+
 **Undercat** is a small Python library implementing a functional programming construct called the *Reader functor*. This pattern is particularly useful for dependency injection, composing functions, and operating on immutable, context-aware computations.
 
 The Reader functor is ideal when you need to:
