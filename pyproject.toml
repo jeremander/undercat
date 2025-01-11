@@ -7,7 +7,7 @@ name = "undercat"
 dynamic = ["version"]
 description = "Library implementing the covariant Hom (AKA \"Reader\") functor."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
   { name = "Jeremy Silver", email = "jeremys@nessiness.com" }
@@ -21,11 +21,56 @@ dependencies = []
 allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
-only-include = ["undercat"]
-exclude = [".venv", "TODO.md"]
+include = ["/undercat", "tests.py"]
 
 [tool.hatch.version]
 path = "undercat/__init__.py"
+
+
+[tool.hatch.envs.lint]
+dependencies = [
+  "mypy>=1.14",
+  "ruff>=0.8",
+  "pytest-mypy",
+  "vermin>=1.6",
+]
+
+[tool.hatch.envs.lint.scripts]
+# linting
+run-ruff = "ruff check {args:undercat tests.py}"
+# ensure compatibility with Py3.10 and higher
+run-vermin = "vermin {args:.}"
+# type-checking
+run-mypy = "mypy --install-types --non-interactive {args:undercat tests.py}"
+all = ["run-ruff", "run-vermin", "run-mypy"]
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+]
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args:tests.py}"
+test-debug = "pytest --pdb {args:tests.py}"
+cov-report = ["- coverage combine", "coverage report", "coverage html"]
+cov = ["test", "cov-report"]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.10", "3.11", "3.12", "3.13"]
+
+[tool.hatch.envs.badge]
+dependencies = [
+  "coverage",
+  "genbadge[tests,coverage]"
+]
+
+[tool.hatch.envs.badge.scripts]
+badge-cov = ["coverage xml", "genbadge coverage -i coverage.xml"]
+badges = ["badge-cov"]
+
+[tool.hatch.publish.index]
+disable = true
 
 [tool.commitizen]
 tag_format = "v$major.$minor.$patch"

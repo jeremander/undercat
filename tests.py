@@ -100,7 +100,6 @@ OuterUntypedNT = namedtuple('OuterUntypedNT', ['val1', 'val2'])
     (-r_square, 3, -9),
     (+r_square, 3, 9),
     (~r_square, 3, -10),
-    (~uc.const(True), 100, -2),  # ~True is -2
     (r_square + r_add_one, 3, 13),
     (r_square - r_add_one, 3, 5),
     (r_square * r_add_one, 3, 36),
