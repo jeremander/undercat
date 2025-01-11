@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import builtins
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, is_dataclass
+from dataclasses import is_dataclass
 import functools
 import operator as ops
 from typing import Any, Callable, Generic, Optional, TypeVar
@@ -85,10 +85,11 @@ def _getattr(attr: str, *args: Any, type: Optional[type] = None) -> Callable[[An
 # READER #
 ##########
 
-@dataclass
 class Reader(Generic[S, A]):
     """Class that wraps a function func : S -> A."""
-    func: Callable[[S], A]
+
+    def __init__(self, func: Callable[[S], A]) -> None:
+        self.func = func
 
     @classmethod
     def const(cls, val: A) -> Reader[S, A]:
