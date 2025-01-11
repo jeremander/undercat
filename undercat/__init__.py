@@ -85,7 +85,7 @@ def _getattr(attr: str, *args: Any, type: Optional[type] = None) -> Callable[[An
 # READER #
 ##########
 
-@dataclass(frozen=True)
+@dataclass
 class Reader(Generic[S, A]):
     """Class that wraps a function func : S -> A."""
     func: Callable[[S], A]
