@@ -17,6 +17,11 @@ classifiers = [
 ]
 dependencies = []
 
+[project.urls]
+Documentation = "https://github.com/jeremander/undercat#readme"
+Issues = "https://github.com/jeremander/undercat/issues"
+Source = "https://github.com/jeremander/undercat"
+
 [tool.hatch.metadata]
 allow-direct-references = true
 

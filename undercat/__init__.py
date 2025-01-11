@@ -10,7 +10,7 @@ import operator as ops
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 S = TypeVar('S')
