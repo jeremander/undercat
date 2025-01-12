@@ -81,6 +81,10 @@ def _getattr(attr: str, *args: Any, type: Optional[type] = None) -> Callable[[An
         return func
 
 
+def _make_singleton_tuple(val: S) -> tuple[S]:
+    return (val,)
+
+
 ##########
 # READER #
 ##########
@@ -99,6 +103,10 @@ class Reader(Generic[S, A]):
     @classmethod
     def make_tuple(cls, *readers: Reader[S, A]) -> Reader[S, tuple[A, ...]]:
         """Converts multiple Readers into a single Reader that produces a tuple of values, one for each of the input Readers."""
+        if not readers:
+            return Reader.const(())
+        if len(readers) == 1:
+            return readers[0].map(_make_singleton_tuple)
         return Reader(lambda val: tuple(reader(val) for reader in readers))
 
     def __call__(self, val: S) -> A:

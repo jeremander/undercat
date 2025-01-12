@@ -87,6 +87,7 @@ OuterUntypedNT = namedtuple('OuterUntypedNT', ['val1', 'val2'])
     (uc.attrgetter('val1.attr', type=OuterUntypedNT), OuterDC(Obj(3), 1), 3),
     (uc.attrgetter('val1.fake', type=OuterUntypedNT), OuterDC(Obj(3), 1), AttributeError("'Obj' object has no attribute 'fake'")),
     # make_tuple
+    (uc.make_tuple(uc.const(1)), 0, (1,)),
     (uc.make_tuple(uc.const(1), uc.const(2)), 0, (1, 2)),
     # map
     (r_square.map(add_one), 3, 10),
