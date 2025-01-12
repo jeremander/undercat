@@ -10,7 +10,7 @@ import operator as ops
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 S = TypeVar('S')
@@ -102,12 +102,14 @@ class Reader(Generic[S, A]):
         return Reader(lambda val: tuple(reader(val) for reader in readers))
 
     def __call__(self, val: S) -> A:
-        """Calls the wrapped function."""
+        """Calls the wrapped function.
+        NOTE: subclasses should not override this directly, but instead modify the wrapped function itself."""
         return self.func(val)
 
     def map(self, func: Callable[[A], B]) -> Reader[S, B]:
         """Left-composes a function onto the wrapped function, returning a new Reader."""
-        return Reader(lambda val: func(self(val)))
+        inner = self.func
+        return Reader(lambda val: func(inner(val)))
 
     def map_binary(self, operator: Callable[[A, A], B], other: Reader[S, A]) -> Reader[S, B]:
         """Given a binary operator and another Reader, returns a new Reader that applies the operator to the output of this Reader and the other Reader."""
