@@ -31,7 +31,6 @@ include = ["/undercat", "tests.py"]
 [tool.hatch.version]
 path = "undercat/__init__.py"
 
-
 [tool.hatch.envs.lint]
 dependencies = [
   "mypy>=1.14",
