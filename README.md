@@ -32,7 +32,7 @@ or (using [uv](https://docs.astral.sh/uv/))
 
 ## Quickstart
 
-### 1. Basic Usage
+### Basic Usage
 
 Define a `Reader` that retrieves data from a context and operates on it:
 
@@ -53,7 +53,7 @@ context = Context(42)
 get_value(context)  # output: 42
 ```
 
-### 2. Function Composition
+### Function Composition
 
 `Reader`s can be composed using `.map` to transform outputs:
 
@@ -64,7 +64,7 @@ get_value_and_increment = get_value.map(lambda x: x + 1)
 get_value_and_increment(context)  # output: 43
 ```
 
-### 3. Combining Readers
+### Combining Readers
 
 Combine multiple `Reader`s into one using operators:
 

@@ -10,7 +10,7 @@ import operator as ops
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 S = TypeVar('S')
@@ -237,13 +237,14 @@ def itemgetter(index: Any) -> Reader[S, Any]:
 
 
 def attrgetter(attr: str, *args: Any, type: Optional[type] = None) -> Reader[S, Any]:
-    """Given an attribute string and optional default, returns a Reader that takes a value and returns returns getattr(value, attr, [default]).
-    attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval."""
+    """Given an attribute string and optional default, returns a Reader that takes a value and returns getattr(value, attr, [default]).
+    attr may contain multiple fields separated by '.' (example x.y.z), which will perform nested attribute retrieval.
+    A type keyword argument may also be provided; if so, and the type is a dataclass or namedtuple, validates that the type possesses the target attribute, raising a TypeError if not."""
     return Reader(_getattr(attr, *args, type=type))
 
 
 def map(func: Callable[[A], B], reader: Reader[S, A]) -> Reader[S, B]:  # noqa: A001
-    """Left composes a function onto a Reader, returning a new Reader."""
+    """Left-composes a function onto a Reader, returning a new Reader."""
     return reader.map(func)
 
 
